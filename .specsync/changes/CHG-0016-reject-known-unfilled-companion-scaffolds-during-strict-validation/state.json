@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "CHG-0016-reject-known-unfilled-companion-scaffolds-during-strict-validation",
+  "slug": "reject-known-unfilled-companion-scaffolds-during-strict-validation",
+  "title": "Reject known unfilled companion scaffolds during strict validation",
+  "description": "Reject known unfilled companion scaffolds during strict validation",
+  "kind": "bug_fix",
+  "state": "accepted",
+  "base_commit": "60bd655c2365addc3d7a37e95f5fc20c06a746ff",
+  "created_at": 1783975716,
+  "updated_at": 1783976007,
+  "affected_specs": [
+    "validator"
+  ],
+  "affected_paths": [
+    "src/validator.rs",
+    "tests/integration/check.rs"
+  ],
+  "no_spec_change": false,
+  "no_spec_change_rationale": null,
+  "acceptance_criteria": [
+    "Strict checks report every exact built-in companion scaffold marker with its artifact path and line; non-strict checks warn; concrete companion content passes; fenced examples and ordinary prose discussing placeholders or future work do not trigger"
+  ],
+  "selected_artifacts": [
+    "context",
+    "testing",
+    "tasks",
+    "requirements",
+    "docs"
+  ],
+  "dependencies": [],
+  "answers": {
+    "architecture_risk": "no",
+    "public_contract": "yes"
+  }
+}

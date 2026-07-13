@@ -21,6 +21,54 @@ fn check_valid_project_passes() {
 }
 
 #[test]
+fn strict_check_rejects_unfilled_companion_scaffold() {
+    let tmp = TempDir::new().unwrap();
+    let root = setup_minimal_project(&tmp);
+    let complete_spec = valid_spec("auth", &["src/auth/service.ts"])
+        .replace(
+            "|-----------|----------|\n\n## Dependencies",
+            "|-----------|----------|\n| Invalid session | Reject the request |\n\n## Dependencies",
+        )
+        .replace(
+            "|------|--------|--------|\n",
+            "|------|--------|--------|\n| 2026-07-13 | CorvidLabs | Documented authentication behavior |\n",
+        );
+    fs::write(root.join("specs/auth/auth.spec.md"), complete_spec).unwrap();
+    fs::write(
+        root.join("src/auth/service.ts"),
+        "function login() {}\nfunction logout() {}\n",
+    )
+    .unwrap();
+    fs::write(
+        root.join("specs/auth/context.md"),
+        "---\nspec: auth.spec.md\n---\n\n## Context\n\n<!-- Describe the context and motivation for this module. -->\n",
+    )
+    .unwrap();
+
+    specsync()
+        .args(["check", "--root"])
+        .arg(&root)
+        .args(["--strict", "--force"])
+        .assert()
+        .failure()
+        .stdout(predicate::str::contains(
+            "Unfilled context companion scaffold at specs/auth/context.md:7",
+        ));
+
+    fs::write(
+        root.join("specs/auth/context.md"),
+        "---\nspec: auth.spec.md\n---\n\n## Context\n\nAuthentication owns session creation and revocation.\n",
+    )
+    .unwrap();
+    specsync()
+        .args(["check", "--root"])
+        .arg(&root)
+        .args(["--strict", "--force"])
+        .assert()
+        .success();
+}
+
+#[test]
 fn sdd_failure_json_preserves_check_schema() {
     let tmp = TempDir::new().unwrap();
     let root = setup_minimal_project(&tmp);

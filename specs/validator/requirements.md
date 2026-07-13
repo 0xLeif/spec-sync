@@ -54,3 +54,13 @@ Acceptance Criteria
 - Source discovery respects `source_extensions` config
 - Requirements companions are validated when present but remain optional for technical/internal modules under adaptive artifact policy.
 
+### REQ-validator-002
+
+The validator SHALL report an unfilled canonical companion when a non-fenced line exactly matches a scaffold instruction emitted by a supported built-in context, requirements, or testing template.
+
+Acceptance Criteria
+- Each finding identifies the companion artifact, repository-relative path, line number, and required correction.
+- Strict enforcement fails when a finding remains; advisory enforcement emits the warning through the existing validation result.
+- Concrete companion prose passes.
+- Fenced examples and non-matching prose about placeholders, TODOs, or future work do not trigger the rule.
+

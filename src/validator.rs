@@ -22,6 +22,95 @@ static FILE_REF_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"\|\s*`([^`]+\.\w+)`\s*\|").unwrap());
 static NUMBERED_RE: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?m)^\d+\.\s+\S").unwrap());
 
+const CONTEXT_SCAFFOLD_MARKERS: &[&str] = &[
+    "<!-- Describe the context and motivation for this module. -->",
+    "- <!-- List related modules or specs. -->",
+    "- <!-- Document key design decisions and their rationale. -->",
+    "- Record architectural or design decisions relevant to this spec.",
+    "- List the most important files an agent or new developer should read.",
+    "- Summarize implemented behavior, active work, and known blockers.",
+    "- Capture useful links, investigation notes, and operational context.",
+];
+
+const REQUIREMENTS_SCAFFOLD_MARKERS: &[&str] = &[
+    "- As a developer, I want to <!-- describe the goal -->",
+    "- <!-- List measurable acceptance criteria. -->",
+    "- <!-- List any constraints or limitations. -->",
+    "- <!-- List anything explicitly excluded. -->",
+    "- As a maintainer, I want this module's contract captured clearly so changes can be reviewed against stable behavior.",
+    "- Define acceptance criteria from the module's source behavior and user-facing responsibilities.",
+    "- Capture performance, compatibility, security, and compliance constraints that apply to this module.",
+    "- List behaviors or responsibilities intentionally handled by other modules.",
+];
+
+const TESTING_SCAFFOLD_MARKERS: &[&str] = &[
+    "- <!-- List unit test scenarios. -->",
+    "- <!-- List integration test scenarios. -->",
+    "List the automated tests and fixtures that protect this module.",
+    "List manual QA flows, platform checks, and review notes for this module.",
+    "- [ ] Run the module's primary workflow and compare behavior against this spec.",
+    "List boundary conditions, race risks, permission cases, and error paths.",
+];
+
+const COMPANION_SCAFFOLDS: &[(&str, &str, &[&str])] = &[
+    ("context.md", "context", CONTEXT_SCAFFOLD_MARKERS),
+    (
+        "requirements.md",
+        "requirements",
+        REQUIREMENTS_SCAFFOLD_MARKERS,
+    ),
+    ("testing.md", "testing", TESTING_SCAFFOLD_MARKERS),
+];
+
+fn companion_scaffold_warnings(spec_path: &Path, root: &Path) -> Vec<String> {
+    let Some(spec_dir) = spec_path.parent() else {
+        return Vec::new();
+    };
+    let mut warnings = Vec::new();
+
+    for (file_name, artifact, markers) in COMPANION_SCAFFOLDS {
+        let companion_path = spec_dir.join(file_name);
+        let Ok(content) = fs::read_to_string(&companion_path) else {
+            continue;
+        };
+        let display_path = companion_path
+            .strip_prefix(root)
+            .unwrap_or(&companion_path)
+            .to_string_lossy();
+        let mut fence: Option<(char, usize)> = None;
+
+        for (index, line) in content.lines().enumerate() {
+            let trimmed = line.trim();
+            let fence_char = trimmed.chars().next().filter(|c| *c == '`' || *c == '~');
+            let fence_len = fence_char
+                .map(|ch| trimmed.chars().take_while(|c| *c == ch).count())
+                .unwrap_or(0);
+
+            if let Some((open_char, open_len)) = fence {
+                if fence_char == Some(open_char) && fence_len >= open_len {
+                    fence = None;
+                }
+                continue;
+            }
+            if let Some(ch) = fence_char
+                && fence_len >= 3
+            {
+                fence = Some((ch, fence_len));
+                continue;
+            }
+
+            if markers.contains(&trimmed) {
+                warnings.push(format!(
+                    "Unfilled {artifact} companion scaffold at {display_path}:{} — replace the generated marker with concrete {artifact} evidence",
+                    index + 1
+                ));
+            }
+        }
+    }
+
+    warnings
+}
+
 /// Check if a dependency reference is a cross-project reference.
 /// Cross-project refs use the format `owner/repo@module` (e.g. `corvid-labs/algochat@auth`).
 pub fn is_cross_project_ref(dep: &str) -> bool {
@@ -584,6 +673,10 @@ pub fn validate_spec(
         // and internal-only modules do not need an empty requirements file.
     }
 
+    result
+        .warnings
+        .extend(companion_scaffold_warnings(spec_path, root));
+
     // ─── Custom Validation Rules ─────────────────────────────────────
     apply_custom_rules(spec_path, body, fm, config, &config_hint, &mut result);
 
@@ -924,6 +1017,96 @@ mod tests {
         let files = find_spec_files(tmp.path());
         assert_eq!(files.len(), 1);
         assert!(files[0].ends_with("auth.spec.md"));
+    }
+
+    #[test]
+    fn companion_scaffolds_report_each_known_marker_with_artifact_and_line() {
+        let tmp = tempfile::tempdir().unwrap();
+        let spec_dir = tmp.path().join("specs/auth");
+        fs::create_dir_all(&spec_dir).unwrap();
+        let spec = spec_dir.join("auth.spec.md");
+        fs::write(&spec, "---\nmodule: auth\n---\n").unwrap();
+
+        for (file_name, _, markers) in COMPANION_SCAFFOLDS {
+            fs::write(spec_dir.join(file_name), markers.join("\n")).unwrap();
+        }
+
+        let warnings = companion_scaffold_warnings(&spec, tmp.path());
+        let expected_count: usize = COMPANION_SCAFFOLDS
+            .iter()
+            .map(|(_, _, markers)| markers.len())
+            .sum();
+        assert_eq!(warnings.len(), expected_count);
+        assert!(warnings.iter().any(|warning| {
+            warning.contains("specs/auth/context.md:1") && warning.contains("context evidence")
+        }));
+        assert!(warnings.iter().any(|warning| {
+            warning.contains("specs/auth/requirements.md:1")
+                && warning.contains("requirements evidence")
+        }));
+        assert!(warnings.iter().any(|warning| {
+            warning.contains("specs/auth/testing.md:1") && warning.contains("testing evidence")
+        }));
+    }
+
+    #[test]
+    fn companion_scaffolds_ignore_examples_and_legitimate_future_work_prose() {
+        let tmp = tempfile::tempdir().unwrap();
+        let spec_dir = tmp.path().join("specs/auth");
+        fs::create_dir_all(&spec_dir).unwrap();
+        let spec = spec_dir.join("auth.spec.md");
+        fs::write(&spec, "---\nmodule: auth\n---\n").unwrap();
+        fs::write(
+            spec_dir.join("context.md"),
+            "The validator recognizes TODOs, placeholders, and future work as legitimate prose.\n\n```markdown\n<!-- Describe the context and motivation for this module. -->\n```\n",
+        )
+        .unwrap();
+        fs::write(
+            spec_dir.join("requirements.md"),
+            "~~~markdown\n- <!-- List measurable acceptance criteria. -->\n~~~\n",
+        )
+        .unwrap();
+        fs::write(
+            spec_dir.join("testing.md"),
+            "Automated coverage lives in tests/integration/check.rs.\n",
+        )
+        .unwrap();
+
+        assert!(companion_scaffold_warnings(&spec, tmp.path()).is_empty());
+    }
+
+    #[test]
+    fn validate_spec_includes_companion_scaffold_warnings() {
+        let tmp = tempfile::tempdir().unwrap();
+        let spec_dir = tmp.path().join("specs/auth");
+        fs::create_dir_all(&spec_dir).unwrap();
+        let spec = spec_dir.join("auth.spec.md");
+        fs::write(
+            &spec,
+            "---\nmodule: auth\nversion: 1\nstatus: draft\nfiles: []\ndb_tables: []\ndepends_on: []\n---\n\n# Auth\n",
+        )
+        .unwrap();
+        fs::write(
+            spec_dir.join("context.md"),
+            "<!-- Describe the context and motivation for this module. -->\n",
+        )
+        .unwrap();
+
+        let result = validate_spec(
+            &spec,
+            tmp.path(),
+            &HashSet::new(),
+            &HashMap::new(),
+            &SpecSyncConfig::default(),
+        );
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|warning| warning.contains("Unfilled context companion scaffold")),
+            "warnings: {:?}",
+            result.warnings
+        );
     }
 
     #[test]

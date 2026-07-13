@@ -1,6 +1,6 @@
 ---
 module: validator
-version: 6
+version: 7
 status: stable
 files:
   - src/validator.rs
@@ -124,3 +124,4 @@ Implementation SHALL add these canonical dependency specs to `depends_on`: `spec
 | 2026-03-25 | Initial spec |
 | 2026-04-06 | Document archive, compact, merge as consumers of find_spec_files; note hash_cache integration for incremental validation |
 | 2026-07-11 | CHG-0010-canonicalize-every-specsync-5-0-contract-and-requirement: Canonicalize every SpecSync 5.0 contract and requirement |
+| 2026-07-13 | CHG-0016-reject-known-unfilled-companion-scaffolds-during-strict-validation: Reject known unfilled companion scaffolds during strict validation |

@@ -1,0 +1,32 @@
+{
+  "approvals": [
+    {
+      "gate": "definition",
+      "actor": "user:0xLeif",
+      "timestamp": 1783975821,
+      "digest": "b08b6ede9d0ec8b2aa2b67d5b03d3a80583a544e97b393e02b101ec2b790cab9",
+      "note": "Definition approved for exact built-in scaffold detection with fenced-example and ordinary-prose exclusions."
+    },
+    {
+      "gate": "definition",
+      "actor": "user:0xLeif",
+      "timestamp": 1783975953,
+      "digest": "f218b636e4f48ffbcfbf18fb9e3c8f3a09324f45c0d09cfc46ec4a7995f53c1a",
+      "note": "Definition refreshed after recording truthful completed verification tasks; no hosted or unrelated lint success claimed."
+    },
+    {
+      "gate": "definition",
+      "actor": "user:0xLeif",
+      "timestamp": 1783975991,
+      "digest": "d6c421d23f0adebb2b056682edcecb964ffb57a4c5f3fa361d440a93dedcbf90",
+      "note": "Definition refreshed with explicit REQ-validator-002 test evidence mapping."
+    },
+    {
+      "gate": "acceptance",
+      "actor": "user:0xLeif",
+      "timestamp": 1783976007,
+      "digest": "69afc35a879569e6625a936945609b8dd726059e80671f477682fbb4c98fbbfc",
+      "note": "Accepted after focused regressions, all 1,721 Rust tests, release build, exact-marker review, false-positive exclusions, and successful supported lifecycle verification."
+    }
+  ]
+}
