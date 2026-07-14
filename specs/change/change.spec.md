@@ -1,6 +1,6 @@
 ---
 module: change
-version: 23
+version: 24
 status: active
 files:
   - src/change.rs
@@ -31,6 +31,7 @@ Provides the spec-sync 5.0 verified spec-driven development lifecycle, including
 11. Concurrent effective-contract validations use isolated temporary workspaces.
 12. Stale accepted delivery evidence can return only to verifying through an explicit human actor and reason, while prior verification and closing evidence remain inspectable.
 13. Historical collision acknowledgements are exact immutable accepted-or-archived evidence and numeric sequence width has no four-digit upper bound.
+14. A fully valid later sequence claim supersedes only the sequence-ledger bytes in historical acceptance inputs; the current owner and every other covered input remain exact evidence.
 
 ## Public API
 
@@ -197,3 +198,4 @@ Provides the spec-sync 5.0 verified spec-driven development lifecycle, including
 | 2026-07-13 | CHG-0023-allow-squash-accepted-evidence-on-descendant-branches: Allow squash-accepted evidence on descendant branches |
 | 2026-07-14 | CHG-0024-stabilize-specsync-5-lifecycle-integrity-and-strict-validation-for-5-0-2: Stabilize SpecSync 5 lifecycle integrity and strict validation for 5.0.2 |
 | 2026-07-14 | CHG-0025-address-all-unresolved-review-feedback-on-pr-366: Address all unresolved review feedback on PR 366 |
+| 2026-07-14 | CHG-0027-preserve-accepted-evidence-across-valid-later-sequence-claims: Preserve accepted evidence across valid later sequence claims |

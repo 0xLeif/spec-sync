@@ -3298,6 +3298,11 @@ fn acceptance_input_digest(
     paths.sort();
     paths.dedup();
     let git_modes = git_index_modes(root)?;
+    let historical_sequence_ledger = if record_covers_project_path(root, record, SEQUENCE_PATH) {
+        historical_sequence_ledger_acceptance_content(root, record)?
+    } else {
+        None
+    };
     let mut digest = FramedDigest::new(ACCEPTANCE_DIGEST_DOMAIN);
     for relative in paths {
         if project_input_is_volatile(&relative)
@@ -3313,6 +3318,11 @@ fn acceptance_input_digest(
                 _ => b"file",
             };
             digest.entry(&relative, kind, mode, content);
+        } else if relative == SEQUENCE_PATH
+            && let Some(content) = &historical_sequence_ledger
+        {
+            let mode = git_modes.get(&relative).copied().unwrap_or(0o100644);
+            digest.entry(&relative, b"file", mode, content);
         } else {
             let path = root.join(&relative);
             match fs::symlink_metadata(&path) {
@@ -3345,6 +3355,28 @@ fn acceptance_input_digest(
         }
     }
     Ok(digest.finish())
+}
+
+fn historical_sequence_ledger_acceptance_content(
+    root: &Path,
+    record: &ChangeRecord,
+) -> Result<Option<Vec<u8>>, String> {
+    validate_change_sequences(root)?;
+    let Some(ledger) = load_change_sequence_ledger(root)? else {
+        return Ok(None);
+    };
+    let sequence = change_sequence(&record.id)
+        .ok_or_else(|| format!("invalid change ID `{}`", record.id.escape_default()))?;
+    if ledger.sequence <= sequence {
+        return Ok(None);
+    }
+    let historical = ChangeSequenceLedger {
+        schema_version: ledger.schema_version,
+        sequence,
+        id: record.id.clone(),
+        acknowledged_collisions: ledger.acknowledged_collisions,
+    };
+    Ok(Some(json_content(&historical)?.into_bytes()))
 }
 
 fn ensure_definition_approval_valid(root: &Path, record: &ChangeRecord) -> Result<(), String> {
@@ -7187,33 +7219,84 @@ mod tests {
         assert_ne!(first, second);
     }
 
+    // Verifies REQ-change-029.
     #[test]
-    fn repository_backed_sequence_ledger_is_a_governed_delivery_input() {
+    fn valid_later_sequence_claim_preserves_historical_acceptance_input() {
         let temp = TempDir::new().unwrap();
         let root = temp.path();
-        fs::create_dir_all(root.join(".specsync")).unwrap();
         let mut record = completed_no_spec_record(root);
         record.state = ChangeState::Implementing;
         record.affected_paths = vec![".specsync".into()];
-        fs::write(
-            root.join(SEQUENCE_PATH),
-            r#"{"schema_version":1,"sequence":24,"id":"CHG-0024-first","acknowledged_collisions":[]}"#,
-        )
-        .unwrap();
+        save_change(root, &record).unwrap();
         let first_workspace = project_input_digest(root).unwrap();
         let first_acceptance = acceptance_input_digest(root, &record, &[]).unwrap();
 
-        fs::write(
-            root.join(SEQUENCE_PATH),
-            r#"{"schema_version":1,"sequence":25,"id":"CHG-0025-second","acknowledged_collisions":[]}"#,
+        let successor = create_change(
+            root,
+            CreateChangeRequest {
+                description: "Later sequence owner".into(),
+                kind: ChangeKind::Operations,
+                affected_specs: Vec::new(),
+                affected_paths: vec!["ops/later".into()],
+                requested_artifacts: Vec::new(),
+                no_spec_change: true,
+                rationale: Some("fixture".into()),
+            },
         )
         .unwrap();
         let second_workspace = project_input_digest(root).unwrap();
         let second_acceptance = acceptance_input_digest(root, &record, &[]).unwrap();
 
+        assert!(change_sequence(&successor.id) > change_sequence(&record.id));
         assert_ne!(first_workspace, second_workspace);
-        assert_ne!(first_acceptance, second_acceptance);
+        assert_eq!(first_acceptance, second_acceptance);
         assert!(!project_input_is_volatile(SEQUENCE_PATH));
+    }
+
+    #[test]
+    fn current_sequence_owner_binds_exact_ledger_content() {
+        let temp = TempDir::new().unwrap();
+        let root = temp.path();
+        let mut record = completed_no_spec_record(root);
+        record.state = ChangeState::Implementing;
+        record.affected_paths = vec![".specsync".into()];
+        save_change(root, &record).unwrap();
+        let canonical = acceptance_input_digest(root, &record, &[]).unwrap();
+        let ledger = load_change_sequence_ledger(root).unwrap().unwrap();
+        fs::write(
+            root.join(SEQUENCE_PATH),
+            serde_json::to_string(&ledger).unwrap(),
+        )
+        .unwrap();
+
+        assert!(validate_change_sequences(root).is_ok());
+        assert_ne!(
+            canonical,
+            acceptance_input_digest(root, &record, &[]).unwrap()
+        );
+    }
+
+    #[test]
+    fn invalid_later_sequence_claim_cannot_replace_historical_ledger_input() {
+        let temp = TempDir::new().unwrap();
+        let root = temp.path();
+        let mut record = completed_no_spec_record(root);
+        record.state = ChangeState::Implementing;
+        record.affected_paths = vec![".specsync".into()];
+        save_change(root, &record).unwrap();
+        write_json(
+            &root.join(SEQUENCE_PATH),
+            &ChangeSequenceLedger {
+                schema_version: 1,
+                sequence: 2,
+                id: "CHG-0002-missing-owner".into(),
+                acknowledged_collisions: Vec::new(),
+            },
+        )
+        .unwrap();
+
+        let error = acceptance_input_digest(root, &record, &[]).unwrap_err();
+        assert!(error.contains("highest recorded sequence"));
     }
 
     #[test]

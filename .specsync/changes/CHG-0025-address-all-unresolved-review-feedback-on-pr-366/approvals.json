@@ -27,7 +27,104 @@
       "timestamp": 1783995075,
       "digest": "e1675683da705e0595a12e2fef8bd8cd1454ea351099d620ac9170c5c13bb52d",
       "note": null
+    },
+    {
+      "gate": "acceptance",
+      "actor": "0xLeif",
+      "timestamp": 1784000752,
+      "digest": "0844b4febfbb21d527acd8a237d780eb42fca0c7fa0415d535edfc71f1db0ccb",
+      "note": null
+    },
+    {
+      "gate": "acceptance",
+      "actor": "0xLeif",
+      "timestamp": 1784000995,
+      "digest": "47e2ed9485fc849fe21b8f6484294850a3bf283047ad8fb8574a15c2d1e4d05f",
+      "note": null
     }
   ],
-  "reopenings": []
+  "reopenings": [
+    {
+      "schema_version": 1,
+      "change_id": "CHG-0025-address-all-unresolved-review-feedback-on-pr-366",
+      "actor": "0xLeif",
+      "reason": "CHG-0027 legitimately updates accepted src/change.rs inputs",
+      "timestamp": 1783998572,
+      "from_state": "accepted",
+      "to_state": "verifying",
+      "superseded_approval": {
+        "gate": "acceptance",
+        "actor": "0xLeif",
+        "timestamp": 1783995075,
+        "digest": "e1675683da705e0595a12e2fef8bd8cd1454ea351099d620ac9170c5c13bb52d",
+        "note": null
+      },
+      "prior_verification": {
+        "timestamp": 1783994958,
+        "commit": "f2a9d2cafdaff23c904a1fd73e5c8ac21f89ca89",
+        "contract_digest": "ee5819f2f1397f1a05d72e9ee6ac5344a78609159f42c21e7d5dbf95f643c32e",
+        "workspace_digest": "0f5522bd187e2a4c5d8b3cd8fc4adca599a705b9a868a1ac88c373e6ab3ef29c",
+        "acceptance_input_digest": "1b81262eae572b96c91ca3754713cee5c63fd6b52b8f245a43d9ab548b443b8a",
+        "passed": true,
+        "commands": [
+          {
+            "command": "cargo test",
+            "success": true,
+            "exit_code": 0
+          }
+        ],
+        "requirement_ids": [
+          "REQ-change-026",
+          "REQ-change-027",
+          "REQ-change-028",
+          "REQ-cli-003",
+          "REQ-config-002",
+          "REQ-validator-004"
+        ]
+      },
+      "stale_acceptance_input_digest": "1b81262eae572b96c91ca3754713cee5c63fd6b52b8f245a43d9ab548b443b8a",
+      "current_acceptance_input_digest": "8e1ffc99985c038e2a9d9e8405a15e5c99f77a1dc21db5b7719d00620fc86473"
+    },
+    {
+      "schema_version": 1,
+      "change_id": "CHG-0025-address-all-unresolved-review-feedback-on-pr-366",
+      "actor": "0xLeif",
+      "reason": "CHG-0027 canonical application legitimately updates accepted specs/change inputs",
+      "timestamp": 1784000773,
+      "from_state": "accepted",
+      "to_state": "verifying",
+      "superseded_approval": {
+        "gate": "acceptance",
+        "actor": "0xLeif",
+        "timestamp": 1784000752,
+        "digest": "0844b4febfbb21d527acd8a237d780eb42fca0c7fa0415d535edfc71f1db0ccb",
+        "note": null
+      },
+      "prior_verification": {
+        "timestamp": 1783998613,
+        "commit": "36d4751f7a32611f23b1d0f02c81b6f3b968b076",
+        "contract_digest": "ee5819f2f1397f1a05d72e9ee6ac5344a78609159f42c21e7d5dbf95f643c32e",
+        "workspace_digest": "d85d1b8b4aa3caef882224c1275b08c16ca9ad49deb668434615f40ef9f3dd72",
+        "acceptance_input_digest": "8e1ffc99985c038e2a9d9e8405a15e5c99f77a1dc21db5b7719d00620fc86473",
+        "passed": true,
+        "commands": [
+          {
+            "command": "cargo test",
+            "success": true,
+            "exit_code": 0
+          }
+        ],
+        "requirement_ids": [
+          "REQ-change-026",
+          "REQ-change-027",
+          "REQ-change-028",
+          "REQ-cli-003",
+          "REQ-config-002",
+          "REQ-validator-004"
+        ]
+      },
+      "stale_acceptance_input_digest": "8e1ffc99985c038e2a9d9e8405a15e5c99f77a1dc21db5b7719d00620fc86473",
+      "current_acceptance_input_digest": "9b8920ed94055a6872a5a890cf5fa601b38c9f25f0402e4069171f23e7662d69"
+    }
+  ]
 }
