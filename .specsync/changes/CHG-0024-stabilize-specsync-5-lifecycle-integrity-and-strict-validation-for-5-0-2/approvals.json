@@ -62,6 +62,13 @@
       "timestamp": 1784040933,
       "digest": "651eec1bcd12e8e0fec49bf9011f381137580bf3ac01e229a60d6ef5d4d783de",
       "note": "Fresh closing approval after PR 370 review corrections and complete native verification; prior approval history preserved."
+    },
+    {
+      "gate": "acceptance",
+      "actor": "0xLeif",
+      "timestamp": 1784048228,
+      "digest": "af84ffcd12aeeab793ff2efc07325849ae9e5026485c577e668a656909077346",
+      "note": "Explicit reacceptance after verified CHG-0033 legitimately updated the accepted src/change.rs input."
     }
   ],
   "reopenings": [
